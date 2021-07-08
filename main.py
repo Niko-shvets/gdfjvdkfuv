@@ -30,11 +30,16 @@ def main(argv):
 
 
         сoords3d = normalize_body(сoords3d,unity_body_length)
-        angle = human_angles(сoords3d)
+        # angle = human_angles(сoords3d)
+
+        coords_arr = np.array(list(сoords3d.values()))
+        coords_list = [round(num, 4) for num in coords_arr.reshape(-1)]
+        msg = "".join(str(x) + " " for x in coords_list) # create massege 
 
         while True:
-        # send massage to a server Антон тут нужно дописать что ты будешь передавать
-            msg = '%.4f %.4f %.4f %.4f'%(armX_1,armY_1,armX_2,armY_2)
+        # send message to a server
+        # TODO: send message only once and make sure that it was received
+            # msg = '%.4f %.4f %.4f %.4f'%(armX_1,armY_1,armX_2,armY_2)
             s.send(bytes(msg, "utf-8"))
             time.sleep(1)
         s.close()
