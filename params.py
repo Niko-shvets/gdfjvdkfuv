@@ -12,6 +12,13 @@ spine = np.array([0, 0.1018159, 0.001315209])
 spine1 = np.array([0, 0.1008345, -0.01000804])
 spine2 = np.array([0, 0.09100011, -0.01373417])
 neck = np.array([0, 0.1667167, -0.02516168])
+left_up_leg = np.array([-0.08207782, -0.06751714, -0.01599556])
+left_knee = np.array([0, -0.4437047, 0.002846426])
+left_ankle = np.array([0, -0.4442787, -0.02982191])
+left_shoulder = np.array([-0.1059237, -0.005245829, -0.0223212])
+left_elbow = np.array([-0.2784152, 0, 0])
+left_wrist = np.array([-0.2832884, 0, 0])
+unity_ass_position = -4 # current camera position; it will be used to adjust body position at particular frame
 
 # for coordinate extractor file
 mean = np.array([0.485, 0.456, 0.406], np.float32).reshape(1, 1, 3)
