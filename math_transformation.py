@@ -1,5 +1,6 @@
 import numpy as np
 import math
+from pykalman import KalmanFilter
 from params import *
 
 
@@ -122,41 +123,46 @@ def check_sides(coords:dict,trsh:int)->bool:
     return valid
 
 
-def normalize_body(body_dict:dict, unity_body_length:float)->dict:
+def normalize_body(body_dict:dict, 
+                   unity_body_length:float, 
+                   ass_2d:np.array, 
+                   img_shape:np.array)->dict:
     """
     Returns normalized body skeleton. Normalization is in accordance to Unity model
     """
     
+    helper_arr = np.array([1,1,1])
+
     image_body_length = np.linalg.norm((body_dict['ass'] - body_dict['neck']))
     scale_factor_body = unity_body_length / image_body_length
 
     # new_body_dict = {'ass': np.array([0,0,0], dtype=np.float32)}
-    new_body_dict = {'ass': get_ass_location(image_body_length, unity_body_length, unity_ass_position)}
-    new_body_dict['neck'] = (body_dict['ass'] - body_dict['neck']) * scale_factor_body * np.array([-1,1,-1])
-    new_body_dict['chest'] = (body_dict['ass'] - body_dict['chest']) * scale_factor_body * np.array([-1,1,-1])
+    new_body_dict = {'ass': get_ass_location(image_body_length, unity_body_length, unity_ass_position, ass_2d, img_shape)}
+    new_body_dict['neck'] = (body_dict['ass'] - body_dict['neck']) * scale_factor_body * helper_arr
+    new_body_dict['chest'] = (body_dict['ass'] - body_dict['chest']) * scale_factor_body * helper_arr
     
-    new_body_dict['right_hip'] = (body_dict['ass'] - body_dict['right_hip']) * scale_factor_body * np.array([-1,1,-1])
-    new_body_dict['right_knee'] = (body_dict['right_hip'] - body_dict['right_knee']) * np.array([-1,1,-1])
+    new_body_dict['right_hip'] = (body_dict['ass'] - body_dict['right_hip']) * scale_factor_body * helper_arr
+    new_body_dict['right_knee'] = (body_dict['right_hip'] - body_dict['right_knee']) * helper_arr
     new_body_dict['right_knee'] = new_body_dict['right_knee'] * unity_up_leg_length / np.linalg.norm(new_body_dict['right_knee'])
-    new_body_dict['right_ankle'] = (body_dict['right_knee'] - body_dict['right_ankle']) * np.array([-1,1,-1])
+    new_body_dict['right_ankle'] = (body_dict['right_knee'] - body_dict['right_ankle']) * helper_arr
     new_body_dict['right_ankle'] = new_body_dict['right_ankle'] * unity_lower_leg_length / np.linalg.norm(new_body_dict['right_ankle'])
 
-    new_body_dict['left_hip'] = (body_dict['ass'] - body_dict['left_hip']) * scale_factor_body * np.array([-1,1,-1])
-    new_body_dict['left_knee'] = (body_dict['left_hip'] - body_dict['left_knee']) * np.array([-1,1,-1])
+    new_body_dict['left_hip'] = (body_dict['ass'] - body_dict['left_hip']) * scale_factor_body * helper_arr
+    new_body_dict['left_knee'] = (body_dict['left_hip'] - body_dict['left_knee']) * helper_arr
     new_body_dict['left_knee'] = new_body_dict['left_knee'] * unity_up_leg_length / np.linalg.norm(new_body_dict['left_knee'])
-    new_body_dict['left_ankle'] = (body_dict['left_knee'] - body_dict['left_ankle']) * np.array([-1,1,-1])
+    new_body_dict['left_ankle'] = (body_dict['left_knee'] - body_dict['left_ankle']) * helper_arr
     new_body_dict['left_ankle'] = new_body_dict['left_ankle'] * unity_lower_leg_length / np.linalg.norm(new_body_dict['left_ankle'])
     
-    new_body_dict['right_shoulder'] = (body_dict['chest'] - body_dict['right_shoulder']) * scale_factor_body * np.array([-1,1,-1])
-    new_body_dict['right_elbow'] = (body_dict['right_shoulder'] - body_dict['right_elbow']) * np.array([-1,1,-1])
+    new_body_dict['right_shoulder'] = (body_dict['chest'] - body_dict['right_shoulder']) * scale_factor_body * helper_arr
+    new_body_dict['right_elbow'] = (body_dict['right_shoulder'] - body_dict['right_elbow']) * helper_arr
     new_body_dict['right_elbow'] = new_body_dict['right_elbow'] * unity_arm_length / np.linalg.norm(new_body_dict['right_elbow'])
-    new_body_dict['right_wrist'] = (body_dict['right_elbow'] - body_dict['right_wrist']) * np.array([-1,1,-1])
+    new_body_dict['right_wrist'] = (body_dict['right_elbow'] - body_dict['right_wrist']) * helper_arr
     new_body_dict['right_wrist'] = new_body_dict['right_wrist'] * unity_forearm_length / np.linalg.norm(new_body_dict['right_wrist'])
     
-    new_body_dict['left_shoulder'] = (body_dict['chest'] - body_dict['left_shoulder']) * scale_factor_body * np.array([-1,1,-1])
-    new_body_dict['left_elbow'] = (body_dict['left_shoulder'] - body_dict['left_elbow']) * np.array([-1,1,-1])
+    new_body_dict['left_shoulder'] = (body_dict['chest'] - body_dict['left_shoulder']) * scale_factor_body * helper_arr
+    new_body_dict['left_elbow'] = (body_dict['left_shoulder'] - body_dict['left_elbow']) * helper_arr
     new_body_dict['left_elbow'] = new_body_dict['left_elbow'] * unity_arm_length / np.linalg.norm(new_body_dict['left_elbow'])
-    new_body_dict['left_wrist'] = (body_dict['left_elbow'] - body_dict['left_wrist']) * np.array([-1,1,-1])
+    new_body_dict['left_wrist'] = (body_dict['left_elbow'] - body_dict['left_wrist']) * helper_arr
     new_body_dict['left_wrist'] = new_body_dict['left_wrist'] * unity_forearm_length / np.linalg.norm(new_body_dict['left_wrist'])
     
     return new_body_dict
@@ -214,9 +220,71 @@ def knee_check2(coords:dict)->dict:
 
 
 
-def get_ass_location(image_body_length:float, unity_body_length:float, unity_ass_position:float)->np.array:
-    z_coord = unity_body_length / (unity_ass_position * image_body_length) - unity_ass_position
-    new_z_coord = - z_coord / 2
-    # new_z_coord = unity_ass_position + z_coord
+def get_ass_location(image_body_length:float, 
+                     unity_body_length:float, 
+                     unity_ass_position:float, 
+                     ass_2d:np.array,
+                     img_shape:np.array )->np.array:
+
+    z_coord = (unity_ass_position * image_body_length) / unity_body_length  - unity_ass_position
+    new_z_coord = - z_coord / 1.5
+
+    ass_2d -= img_shape/2
+    ass_2d *= -1
+    new_ass_2d = ass_2d * unity_screen_shape / img_shape
+    # x,y = new_ass_2d
+    # new_ass_2d -= unity_screen_shape/2
+    # new_ass_2d *= -1
     
-    return np.array([0, 1.2, new_z_coord], dtype=np.float32)
+    new_ass_2d[1] += 1 # add 1 as camera location
+
+    return np.array([new_ass_2d[0], new_ass_2d[1], new_z_coord], dtype=np.float32)
+
+
+
+def Kalman1D(observations,damping=1):
+    # To return the smoothed time series data
+    observation_covariance = damping
+    initial_value_guess = observations[0]
+    transition_matrix = 1
+    transition_covariance = 0.1
+    initial_value_guess
+    kf = KalmanFilter(
+            initial_state_mean=initial_value_guess,
+            initial_state_covariance=observation_covariance,
+            observation_covariance=observation_covariance,
+            transition_covariance=transition_covariance,
+            transition_matrices=transition_matrix
+        )
+    pred_state, state_cov = kf.smooth(observations)
+    return pred_state
+
+
+
+def Kalman_preprocessing(coords:list):
+    
+    length_measurments = len(coords)
+    
+    measurements_x = {}
+    measurements_y = {}
+    measurements_z = {}
+    
+    keys = coords[0].keys()
+    
+    for key in keys:
+        measurements_x[key] = Kalman1D([cordinate[key][0] for cordinate in coords])
+        measurements_y[key] = Kalman1D([cordinate[key][1] for cordinate in coords])
+        measurements_z[key] = Kalman1D([cordinate[key][2] for cordinate in coords])
+    
+    filtered_coords = []
+    
+    for i in range(length_measurments):
+        
+        current_dict = {}
+        
+        for key in keys:
+            current_dict[key] = np.array([measurements_x[key][i],measurements_y[key][i],measurements_z[key][i]]).reshape(-1)
+        
+        filtered_coords.append(current_dict)
+    
+    return filtered_coords

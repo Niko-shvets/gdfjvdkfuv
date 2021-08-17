@@ -18,7 +18,25 @@ left_ankle = np.array([0, -0.4442787, -0.02982191])
 left_shoulder = np.array([-0.1059237, -0.005245829, -0.0223212])
 left_elbow = np.array([-0.2784152, 0, 0])
 left_wrist = np.array([-0.2832884, 0, 0])
-unity_ass_position = -4 # current camera position; it will be used to adjust body position at particular frame
+unity_ass_position = 4 # current camera position; it will be used to adjust body position at particular frame
+unity_screen_shape = np.array([2, 3]) # TODO: create automation for this parameter
+
+
+# # Banana man parameters
+# hip = np.array([0, -0.0008799048, 0.05207037])
+# spine = np.array([0, 0.006994551, 0])
+# spine1 = np.array([0,0.007542891, 0])
+# spine2 = np.array([0,0.007931685, 0])
+# neck = np.array([0, 0.01014151, 0.000373998])
+# left_up_leg = np.array([-0.004268162, -0.001836704, 0])
+# left_knee = np.array([0, 0.01835469, 0])
+# left_ankle = np.array([0, 0.02861734, 0])
+# left_shoulder = np.array([0, 0.01007129, 0])
+# left_elbow = np.array([0,0.01264537,0])
+# left_wrist = np.array([0,0.01405164,0])
+# unity_ass_position = 4
+# unity_screen_shape = np.array([2, 3]) # TODO: create automation for this parameter
+
 
 # for coordinate extractor file
 mean = np.array([0.485, 0.456, 0.406], np.float32).reshape(1, 1, 3)
