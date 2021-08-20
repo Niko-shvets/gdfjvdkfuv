@@ -123,7 +123,7 @@ def check_sides(coords:dict,trsh:int)->bool:
     return valid
 
 
-def normalize_body(body_dict:dict, unity_body_length:float)->dict:
+def normalize_body(body_dict:dict)->dict:
     """
     Returns normalized body skeleton. Normalization is in accordance to Unity model
     """
