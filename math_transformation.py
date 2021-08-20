@@ -123,10 +123,7 @@ def check_sides(coords:dict,trsh:int)->bool:
     return valid
 
 
-def normalize_body(body_dict:dict, 
-                   unity_body_length:float, 
-                   ass_2d:np.array, 
-                   img_shape:np.array)->dict:
+def normalize_body(body_dict:dict, unity_body_length:float)->dict:
     """
     Returns normalized body skeleton. Normalization is in accordance to Unity model
     """
@@ -136,8 +133,8 @@ def normalize_body(body_dict:dict,
     image_body_length = np.linalg.norm((body_dict['ass'] - body_dict['neck']))
     scale_factor_body = unity_body_length / image_body_length
 
-    # new_body_dict = {'ass': np.array([0,0,0], dtype=np.float32)}
-    new_body_dict = {'ass': get_ass_location(image_body_length, unity_body_length, unity_ass_position, ass_2d, img_shape)}
+    new_body_dict = {'ass': np.array([0,0,0], dtype=np.float32)}
+    # new_body_dict = {'ass': get_ass_location(image_body_length, unity_body_length, unity_ass_position, ass_2d, img_shape)}
     new_body_dict['neck'] = (body_dict['ass'] - body_dict['neck']) * scale_factor_body * helper_arr
     new_body_dict['chest'] = (body_dict['ass'] - body_dict['chest']) * scale_factor_body * helper_arr
     
@@ -220,25 +217,26 @@ def knee_check2(coords:dict)->dict:
 
 
 
-def get_ass_location(image_body_length:float, 
-                     unity_body_length:float, 
-                     unity_ass_position:float, 
-                     ass_2d:np.array,
-                     img_shape:np.array )->np.array:
+def get_ass_location(body_dict_3d, body_dict_2d, img_shape):
+    """
+    Get position of ass point in the Unity world
+    """
 
-    z_coord = (unity_ass_position * image_body_length) / unity_body_length  - unity_ass_position
-    new_z_coord = - z_coord / 1.5
+    image_body_length_3d = np.linalg.norm((body_dict_3d['ass'] - body_dict_3d['neck']))
+    image_body_length_2d = np.linalg.norm(body_dict_2d['ass'] - body_dict_2d['neck'])
 
+    z_coord = (unity_ass_position * image_body_length_3d) / unity_body_length  - unity_ass_position
+    new_z_coord = - z_coord / 3 # 3 is a custom coefficient
+
+    ass_2d = body_dict_2d['ass']
     ass_2d -= img_shape/2
-    ass_2d *= -1
-    new_ass_2d = ass_2d * unity_screen_shape / img_shape
-    # x,y = new_ass_2d
-    # new_ass_2d -= unity_screen_shape/2
-    # new_ass_2d *= -1
-    
-    new_ass_2d[1] += 1 # add 1 as camera location
 
-    return np.array([new_ass_2d[0], new_ass_2d[1], new_z_coord], dtype=np.float32)
+    scale = unity_body_length / image_body_length_2d
+
+    new_x_coord = - ass_2d[0] * unity_ass_position / (unity_ass_position + abs(new_z_coord)) * scale
+    new_y_coord = - ass_2d[1] * unity_ass_position / (unity_ass_position + abs(new_z_coord)) * scale + 1
+
+    return np.array([new_x_coord, new_y_coord, new_z_coord], dtype=np.float32)
 
 
 
